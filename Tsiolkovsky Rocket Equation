@@ -1,22 +1,23 @@
 # R Practice -- The Rocket Equation
-# 2 March 2017
+# 3 March 2017
 
 # References
 # [1] Delta IV parameters taken from spaceflight101.com/spacerocekts/delta-iv-medium-42
 
-# Rocket Equation Model, 1st Attempt
+# Rocket Equation Model, First Attempt
 
 # Clear variables, close all plots, restore defaults
 rm(list=ls())
 dev.off()
 
-# 1.1 The Tsiolkovsky Rocket Equation: dV= Ve ln(Mi/Mf)
+# The Tsiolkovsky Rocket Equation: dV= Ve ln(Mi/Mf)
 print("The Tsiolkovsky Rocket Equation: dV= Ve ln(Mi/Mf)")
-print("This is a basic calculation to find the maximum change in velocity, or Delta V, possible for a rocket of given mass.")
+print("This is a basic calculation to find the maximum change in velocity, or Delta V, possible for a rocket of known mass and specific impulse.")
+# Surprisingly straightforward even though this is literally rocket science.
 # dV = rocket's change in velocity, also known as "delta V"
 # Ve = exhaust velocity. Constant for a given engine; Ve = gravity accel (9.8m/s/s) times Specific Impulse
-# (Specific impulse simply measures engine's efficiency, its change in momentum per unit of fuel burned)
-# ln is the natural logarithm function. Gives a number we need; Details of math not important
+# (Specific impulse simply measures engine's efficiency, its change in momentum per unit of fuel burned; units are given in seconds.)
+# ln is the natural logarithm function. Gives number we need; math details not important. Note that R indicates this operation with "log()", not "ln()".
 # Mi = initial mass -- This is the total mass of all stages, the entire rocket on the launchpad, including fuel.
 # Mf = Final mass of rocket -- mass after burning fuel; or, initial mass, minus fuel mass.
 
@@ -25,29 +26,137 @@ print("This is a basic calculation to find the maximum change in velocity, or De
 # The Delta 4 Medium is a basic two-stage, liquid fuel rocket.
 # The second stage is stacked on top of the first stage.
 # 1st stage burns, then detaches to reduce weight. Then second stage ignites.
-# Because the rocket has two stages, we need two calculations to determine the total delta V.
+# Because the rocket has two stages, we would need two calculations to determine the total delta V.
+# To simplify, let's start with only the first stage.
 
 # Delta 4 first stage parameters. Specific impulse is 245s. Initial mass 252,570kg, final mass 50,570kg
 Ve = 245 * 9.8 #Exhaust velocity calculation. Specific impulse times acceleration due to gravity.
 Mi = 252570 #Initial mass. 1st stage 202,000kg fuel, 26,400kg other; 2nd stage 21,320kg fuel, 2,850kg other
 Mf = Mi - 202000 #Final mass after burning 1st stage fuel.
 
-# Calculate delta V (in our equation, dV) -- this is the maximum delta V possible with our FIRST stage.
+# Calculate delta V (in our equation, dV): maximum delta V possible with our FIRST stage.
 dv_stage_1 <- Ve * log(Mi/Mf)
-print("Maximum change in velocity, first stage, in m/s:")
-print(dv_stage_1)
+cat("Delta V (change in velocity), first stage (m/s):" , dv_stage_1)
 
-# Delta 4 second stage parameters. Specific impulse is 465.5s. First stage detaches after burnout; Mi is now 24,170kg, Mf is 2,850kg
-Ve2 = 465.5 * 9.8
-Mi2 = 24170
-Mf2 = 2850
+# But that's just the rocket itself. We want it to take a payload into space!
+# Let's say we are delivering a 5,000kg satellite.
+Ve = 245 * 9.8
+Mi = 257570 #Added 5,000kg payload.
+Mf = Mi - 202000
+dv_stage_1 <- Ve * log(Mi/Mf)
+cat("Delta V (change in velocity), first stage, (m/s):" , dv_stage_1)
 
-#Calculate delta V for second stage.
+# Done! This is the most basic way to handle it.
+# You can edit the code above with the specific impulse, initial mass, and first stage fuel mass of any rocket, and this program will give you its first stage dV -- the change in velocity after burning all the fuel in the first stage.
+# I've also created a slightly more advanced approach, below.
+
+
+# Rocket Equation Model, Second Attempt
+# (A More Flexible Approach)
+
+# We can ask the user to input rocket parameters in the console, instead of writing them directly into the code.
+# This way, our program can calculate delta V for ANY two-stage rocket, if we have its basic parameters handy. We need specific impulse and mass.
+# So, user enters specific impulse, fuel mass, empty mass, payload mass; R processes these values into Ve, Mi and Mf.
+# (Separating these values will be useful later, to calculate max payload mass instead of delta V.)
+# Since we're asking the user for parameters, let's do the second stage as well and get a dVmax for the whole thing.
+
+# All this section does is ask user for rocket parameters, and convert specific impulse to Ve.
+# Example values to try: Delta 4 first stage: Specific impulse 245s, dry mass 26,400kg, fuel  mass 202000 kg.
+# Delta 4 second stage: Specific impulse 465.5, dry mass 2,850 kg, fuel mass 21,320 kg.
+# Choose any payload mass. For our example above, we used 5,000 kg.
+
+rm(list=ls()) #(first, clear everything for a fresh start)
+
+# First stage
+io <- readline(prompt = "Specific impulse, first stage (s): ") # Asks user for first stage specific impulse.
+  storage.mode(io) <- "numeric" #This line tells R to treat the value we just entered as numeric. (R doesn't know this automatically.)
+  Ve <- 9.8 * io #Exhaust velocity calculation.
+  cat("Ve = " , Ve) #Prints result from line above. Not strictly necessary, just lets user verify Ve for ballpark accuracy.
+Mdry <- readline ("Mass of first stage when EMPTY (kg): ") #This is the unfueled or "dry" mass of only the first stage. For our example Delta 4, it's 26,400 kg.
+  storage.mode(Mdry) <- "numeric"
+Mfuel <- readline ("Fuel mass, first stage (kg): ") #How much fuel is in the first stage?
+  storage.mode(Mfuel) <- "numeric"
+
+# Second stage
+io2 <- readline(prompt = "Specific impulse, second stage (s): ")
+  storage.mode(io2) <- "numeric"
+  Ve2 <- 9.8 * io2
+  cat("Second stage Ve = " , Ve2)
+Mdry2 <- readline ("Mass of second stage when EMPTY -- no fuel, no payload (kg):")
+  storage.mode(Mdry2) <- "numeric"
+Mfuel2 <- readline ("Fuel mass, second stage (kg): ")
+  storage.mode(Mfuel2) <- "numeric"
+Msat <- readline ("Payload mass (kg): ") #Mass of the payload we want to carry. For a Delta 4, this is typically a satellite of several thousand kilograms.
+  storage.mode(Msat) <- "numeric"
+
+# Conversions to make equation work. We already calculated Ve and Ve2 when we entered specific impulses, but I want all of the conversions grouped here.
+Ve <- 9.8 * io
+Mi = Mdry + Mfuel + Mdry2 + Mfuel2 + Msat #Total initial mass. Both dry masses, both fuel masses, plus the payload.
+Mf <- Mi - Mfuel #Stage one "final" mass. The total mass after stage one has burned all of its fuel.
+Ve2 <- 9.8 * io2
+Mi2 <- Mdry2 + Mfuel2 + Msat #Stage two initial mass. Stage one detached itself after it exhausted its fuel.
+Mf2 <- Mi2 - Mfuel2 #Stage two final mass.
+
+# List converted values for user verification. Not strictly necessary.
+cat("First stage Ve, Mi, and Mf, respectively: " , Ve , Mi , Mf)
+cat("Second stage Ve, Mi, and Mf, respectively: " , Ve2 , Mi2 , Mf2)
+
+# Now we just need to run these through the equation. and print our results
+dv_stage_1 <- Ve * log(Mi/Mf) #delta V stage 1
+dv_stage_2 <- Ve2 * log(Mi2/Mf2) #delta V stage 2
+dv_max <- (Ve * log(Mi/Mf)) + (Ve2 * log(Mi2/Mf2)) #delta V max, or the maximum change in velocity for the WHOLE rocket.
+cat("delta V values (m/s) for specified rocket of payload mass:" , Msat , "kg")
+cat("dV first stage: " , dv_stage_1 , "dV second stage: " , dv_stage_2 , "dV Max: " , dv_max)
+
+# Run it again, and try different fuel masses or payload masses and see what it does to delta V max!
+
+# Here is a cleaner version of the above code, with most explanatory comments removed:
+
+# Example
+# Delta 4 first stage: Specific impulse 245s, dry mass 26,400kg, fuel  mass 202000 kg.
+# Delta 4 second stage: Specific impulse 465.5, dry mass 2,850 kg, fuel mass 21,320 kg.
+# Choose any payload mass. For our example above, we used 5,000 kg.
+
+rm(list=ls())
+
+# First stage
+io <- readline(prompt = "Specific impulse, first stage (s): ")
+  storage.mode(io) <- "numeric" 
+  Ve <- 9.8 * io 
+  cat("Ve = " , Ve)
+Mdry <- readline ("Mass of first stage when EMPTY (kg): ") 
+  storage.mode(Mdry) <- "numeric"
+Mfuel <- readline ("Fuel mass, first stage (kg): ")
+  storage.mode(Mfuel) <- "numeric"
+
+# Second stage
+io2 <- readline(prompt = "Specific impulse, second stage (s): ")
+  storage.mode(io2) <- "numeric"
+  Ve2 <- 9.8 * io2
+  cat("Second stage Ve = " , Ve2)
+Mdry2 <- readline ("Mass of second stage when EMPTY -- no fuel, no payload (kg):")
+  storage.mode(Mdry2) <- "numeric"
+Mfuel2 <- readline ("Fuel mass, second stage (kg): ")
+  storage.mode(Mfuel2) <- "numeric"
+Msat <- readline ("Payload mass (kg): ")
+  storage.mode(Msat) <- "numeric"
+
+# Conversions. Ve and Ve2 calculations redundant; iterated here for organization purposes
+Ve <- 9.8 * io
+Mi = Mdry + Mfuel + Mdry2 + Mfuel2 + Msat
+Mf <- Mi - Mfuel
+Ve2 <- 9.8 * io2
+Mi2 <- Mdry2 + Mfuel2 + Msat
+Mf2 <- Mi2 - Mfuel2
+
+# List converted values for user verification.
+cat("First stage Ve, Mi, and Mf, respectively: " , Ve , Mi , Mf)
+cat("Second stage Ve, Mi, and Mf, respectively: " , Ve2 , Mi2 , Mf2)
+
+# Run equation, print results
+dv_stage_1 <- Ve * log(Mi/Mf)
 dv_stage_2 <- Ve2 * log(Mi2/Mf2)
-print("Maximum change in velocity, second stage, in m/s:")
-print(dv_stage_2)
+dv_max <- (Ve * log(Mi/Mf)) + (Ve2 * log(Mi2/Mf2))
+cat("delta V values (m/s) for specified rocket of payload mass:" , Msat , "kg")
+cat("dV first stage: " , dv_stage_1 , "dV second stage: " , dv_stage_2 , "dV Max: " , dv_max)
 
-# But the second stage is already moving -- we want to know the total delta V for the whole rocket
-dv_max <- dv_stage_1+dv_stage_2
-print("Maximum delta V, total, m/s:")
-print (dv_max)
