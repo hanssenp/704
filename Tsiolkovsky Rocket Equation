@@ -1,5 +1,7 @@
+# Georgetown University
+# SEST 704 Intelligence Analytics
 # R Practice -- The Rocket Equation
-# 3 March 2017
+# 28 March 2017
 
 # References
 # [1] Delta IV parameters taken from spaceflight101.com/spacerocekts/delta-iv-medium-42
@@ -115,7 +117,8 @@ cat("dV first stage: " , dv_stage_1 , "dV second stage: " , dv_stage_2 , "dV Max
 # Example
 # Delta 4 first stage: Specific impulse 245s, dry mass 26,400kg, fuel  mass 202000 kg.
 # Delta 4 second stage: Specific impulse 465.5, dry mass 2,850 kg, fuel mass 21,320 kg.
-# Choose any payload mass. For our example above, we used 5,000 kg.
+# Choose payload mass. For the example above, we used 5,000 kg.
+# United Launch Alliance claims that the Delta 4 can carry a useful payload mass of 9,420 kg to LEO.
 
 rm(list=ls())
 
@@ -159,4 +162,3 @@ dv_stage_2 <- Ve2 * log(Mi2/Mf2)
 dv_max <- (Ve * log(Mi/Mf)) + (Ve2 * log(Mi2/Mf2))
 cat("delta V values (m/s) for specified rocket of payload mass:" , Msat , "kg")
 cat("dV first stage: " , dv_stage_1 , "dV second stage: " , dv_stage_2 , "dV Max: " , dv_max)
-
